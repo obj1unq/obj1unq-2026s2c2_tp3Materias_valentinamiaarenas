@@ -1,0 +1,59 @@
+import inscripcion-a-materias.*
+
+describe "Inscripcion a materias" {
+    //Carreras
+    const programacion = new Carrera(materias = #{"Elementos de programacion y logica", "Matematica 1", "Objetos 1", "Objetos 2", "Objetos 3", "Bases de datos", "Programacion concurrente"})
+    const tecnicaturaEnEconomiaSocialYSolidaria = new Carrera(materias = #{"Matematicas para economia y aministracion", "Trabajo y sociedad", "Economia", "Desarrollo local"})
+    const terapiaOcupacional = new Carrera(materias = #{"Lectura y escritura academica", "Ciencias de la salud", "Psicologia", "Antropologia", "Sociologia"})
+    //Estudiantes
+    const alex = new Estudiante()
+    
+    method initialize(){
+        alex.inscribirseACarrera(programacion)
+        alex.inscribirseACarrera(tecnicaturaEnEconomiaSocialYSolidaria)
+    }
+
+    test "Parte 1" {
+        assert.that(alex.estaInscriptoEn(programacion))
+        assert.that(alex.estaInscriptoEn(tecnicaturaEnEconomiaSocialYSolidaria))
+        assert.notThat(alex.estaInscriptoEn(terapiaOcupacional))
+        assert.that(alex.laMateriaPerteneceAAlgunaCarrera("Bases de datos"))
+        assert.notThat(alex.laMateriaPerteneceAAlgunaCarrera("Psicologia"))
+
+        assert.throwsException({alex.inscribirseACarrera(programacion)})
+    }
+
+    test "Parte 2: Historia academica" {
+        alex.finalizarCursadaDeMateria("Matematica 1", 2)
+        alex.finalizarCursadaDeMateria("Objetos 1", 10)
+        alex.finalizarCursadaDeMateria("Economia", 6)
+        alex.finalizarCursadaDeMateria("Trabajo y sociedad", 8)
+        alex.finalizarCursadaDeMateria("Matematica 1", 8)
+        alex.finalizarCursadaDeMateria("Bases de datos", 2)
+
+        assert.throwsException({alex.finalizarCursadaDeMateria("Matematica 1", 7)})
+        assert.throwsException({alex.finalizarCursadaDeMateria("Bases de datos", 12)})
+
+        assert.that(alex.laMateriaEstaAprobada("Matematica 1"))
+        assert.notThat(alex.laMateriaEstaAprobada("Bases de datos"))
+
+        assert.equals(9, alex.promedioDeMateriasAprobadasEn(programacion))
+        assert.equals(2, alex.cantMateriasAprobadasDe(programacion))
+        assert.equals(7, alex.promedioDeMateriasAprobadasEn(tecnicaturaEnEconomiaSocialYSolidaria))
+        assert.throwsException({alex.promedioDeMateriasAprobadasEn(terapiaOcupacional)})
+        
+        alex.inscribirseACarrera(terapiaOcupacional)
+
+        assert.throwsException({alex.promedioDeMateriasAprobadasEn(terapiaOcupacional)})
+        assert.equals(8, alex.promedioDeMateriasAprobadas())
+        
+        const registroMate1 = alex.registroDeCursadaDeLa("Matematica 1")
+
+        assert.equals("Matematica 1", registroMate1.get(0).materia())
+        assert.equals(2, registroMate1.get(0).nota())
+        assert.equals("Matematica 1", registroMate1.get(1).materia())
+        assert.equals(8, registroMate1.get(1).nota())
+
+
+    }
+}
