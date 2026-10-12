@@ -14,6 +14,7 @@ class Estudiante {
   }
 
   method carreras() = carreras
+  method materiasCursadas() = materiasCursadas
 
   method laMateriaPerteneceAAlgunaCarrera(unaMateria) {
     return carreras.any({carrera => carrera.lePerteneceLaMateria(unaMateria)})
@@ -26,11 +27,18 @@ class Estudiante {
   method finalizarCursadaDeMateria(materia, nota) {
     self.validarMateriaEnCarreras(materia)
     self.validarMateriaAprobada(materia)
+    self.validarFinDeCursada(materia)
     self.validarNota(nota)
     
     const materiaCursada = new HistoriaAcademica(materia = materia, nota = nota)
     materiasCursadas.add(materiaCursada)
-    
+    materia.estudianteTerminaCursada(self)
+  }
+
+  method validarFinDeCursada(materia) {
+    if (not self.estaCursandoLaMateria(materia)) {
+      self.error("No esta cursando esta materia")
+    }
   }
 
   method validarMateriaAprobada(materia) {
@@ -45,7 +53,6 @@ class Estudiante {
     }
   }
 
-
   method validarNota(nota) {
     if (not nota.between(1, 10)) {
       self.error("La nota no es valida")
@@ -57,21 +64,21 @@ class Estudiante {
   }
 
   method laMateriaEstaAprobada(materia){
-    return self.materiasAprobadas().any({materiaCursada => materiaCursada.materia() == materia})
+    return self.materiasAprobadas().any({registroActual => registroActual.materia() == materia})
   }
 
   method cantMateriasAprobadas() {
     return self.materiasAprobadas().size()
   }
 
-  method promedioDeMateriasAprobadasEn(carrera){
-    self.validarPromedioDe(carrera)
-    return self.materiasAprobadasDe(carrera).sum({materia => materia.nota()}) / self.cantMateriasAprobadasDe(carrera)
+  method promedioDeMateriasAprobadas() {
+    self.validarPromedio()
+    return self.materiasAprobadas().sum({materia => materia.nota()}) / self.cantMateriasAprobadas()
   }
 
-  method validarPromedioDe(carrera) {
-    if (not self.estaInscriptoEn(carrera) || self.materiasAprobadasDe(carrera).isEmpty()) {
-        self.error("El estudiante no está inscripto a esta carrera")
+  method validarPromedio() {
+    if(self.materiasAprobadas().isEmpty()) {
+      self.error("No cuenta con materias aprobadas")
     }
   }
 
@@ -83,13 +90,14 @@ class Estudiante {
     return self.materiasAprobadasDe(carrera).size()
   }
 
-  method promedioDeMateriasAprobadas() {
-    return self.materiasAprobadas().sum({materia => materia.nota()}) / self.cantMateriasAprobadas()
+  method promedioDeMateriasAprobadasEn(carrera){
+    self.validarPromedioDe(carrera)
+    return self.materiasAprobadasDe(carrera).sum({materia => materia.nota()}) / self.cantMateriasAprobadasDe(carrera)
   }
 
-  method validarPromedio() {
-    if(self.materiasAprobadas().isEmpty()) {
-      self.error("No cuenta con materias aprobadas")
+  method validarPromedioDe(carrera) {
+    if (not self.estaInscriptoEn(carrera) || self.materiasAprobadasDe(carrera).isEmpty()) {
+        self.error("El estudiante no está inscripto a esta carrera")
     }
   }
 
@@ -117,22 +125,31 @@ class Estudiante {
   }
 
   method validarRequisitosDe(materia) {
-    if(not self.cumpleCorrelativas(materia)) {
+    if(not self.cumpleRequisitos(materia)) {
       self.error("No te puedes anotar a esta materia porque faltan cursar las correlativas")
     }
   }
 
-  method cumpleCorrelativas(materia){
-    return materia.requisitos().all({materiaReq => self.laMateriaEstaAprobada(materiaReq)})
+  method cumpleRequisitos(materia){
+    return materia.cumpleRequisitos(self)
   }
 
-  method puedeCursarLaMateria(materia) {
-    return self.laMateriaPerteneceAAlgunaCarrera(materia) && not self.laMateriaEstaAprobada(materia) && not self.estaCursandoLaMateria(materia) && self.cumpleCorrelativas(materia)
+  method puedeCursarLaMateriaDeCarrera(materia, carrera) {
+    return self.estaInscriptoEn(carrera) && carrera.lePerteneceLaMateria(materia) && not self.laMateriaEstaAprobada(materia) && not self.estaCursandoLaMateria(materia) && self.cumpleRequisitos(materia)
   }
 
   method materiasHabilitadasDe(carrera) {
     return carrera.materiasHabilitadas(self)
   }
+
+  method creditosAcumulados() {
+    return self.materiasAprobadas().sum({materiaAprobada => materiaAprobada.creditos()})
+  }
+
+  method creditosAcumuladosEn(carrera) {
+    return self.materiasAprobadasDe(carrera).sum({materiaActual => materiaActual.creditos()})
+  }
+
 }
 
 class Carrera {
@@ -143,28 +160,75 @@ class Carrera {
   }
 
   method materiasHabilitadas(estudiante) {
-    return materias.filter({materiaActual => estudiante.puedeCursarLaMateria(materiaActual)})
+    return materias.filter({materiaActual => estudiante.puedeCursarLaMateriaDeCarrera(materiaActual, self)})
+  }
+
+  method materiasDelAño(año) {
+    return materias.filter({materiaActual => materiaActual.año() == año})
+  }
+
+  method aproboElAño(estudiante, año) {
+    return self.materiasDelAño(año).all({materiaActual => estudiante.laMateriaEstaAprobada(materiaActual)})
   }
 }
 
 class HistoriaAcademica {
   var property nota
   var property materia
+
+  method creditos() = materia.creditos()
 }
 
 class Materia {
-  var requisitos = #{}
+  var property requisitos 
   const estudiantes = #{}
-
-  method agregarRequisitos(_value) {
-    requisitos.add(_value)
-  }
-
-  method requisitos() = requisitos
+  const property creditos
+  var property año
+  const property carreraALaQuePertenece
 
   method anotarA(estudiante) {
     estudiantes.add(estudiante)
   }
 
   method estudiantes() = estudiantes 
+
+  method estudianteTerminaCursada(estudiante){
+    estudiantes.remove(estudiante)
+  }
+
+  method cumpleRequisitos(estudiante){
+    return requisitos.cumpleRequisitos(estudiante, self)
+  }
+}
+
+class RequiereCorrelativas {
+  var property materiasCorrelativas = #{}
+
+  method cumpleRequisitos(estudiante, materia) {
+    return materiasCorrelativas.all({materiaActual => estudiante.laMateriaEstaAprobada(materiaActual)})
+  }
+}
+
+class RequiereCreditos {
+  var property creditosMinimos = 0
+
+  method cumpleRequisitos(estudiante, materia) {
+    const carrera = materia.carreraALaQuePertenece()
+    const materiasAprobadasDeCarrera = estudiante.materiasAprobadasDe(carrera)
+    const creditosAcumulados = materiasAprobadasDeCarrera.sum({materiaActual => materiaActual.creditos()})
+    return creditosAcumulados >= creditosMinimos
+  }
+}
+
+object requiereMateriasDelAñoAnterior {
+  method cumpleRequisitos(estudiante, materia) {
+    const carrera = materia.carreraALaQuePertenece()
+    const añoPrevio = materia.año() - 1
+
+    return carrera.aproboElAño(estudiante, añoPrevio)
+  }
+}
+
+object sinRequisitos {
+  method cumpleRequisitos(estudiante, materia) = true
 }
