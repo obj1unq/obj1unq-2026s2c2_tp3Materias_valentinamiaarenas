@@ -2,40 +2,76 @@ import inscripcion-a-materias.*
 
 describe "Inscripcion a materias" {
     //Carreras
-    const programacion = new Carrera(materias = #{"Elementos de programacion y logica", "Matematica 1", "Objetos 1", "Objetos 2", "Objetos 3", "Bases de datos", "Programacion concurrente"})
-    const tecnicaturaEnEconomiaSocialYSolidaria = new Carrera(materias = #{"Matematicas para economia y aministracion", "Trabajo y sociedad", "Economia", "Desarrollo local"})
-    const terapiaOcupacional = new Carrera(materias = #{"Lectura y escritura academica", "Ciencias de la salud", "Psicologia", "Antropologia", "Sociologia"})
+    const programacion = new Carrera(materias = #{elementosDeProgramacionYLogica, matematica1, objetos1, objetos2, objetos3, basesDeDatos, programacionConcurrente})
+    const tecnicaturaEnEconomiaSocialYSolidaria = new Carrera(materias = #{matematicasParaEconomiaYAdministracion, trabajoYSociedad, economia, desarrolloLocal})
+    const terapiaOcupacional = new Carrera(materias = #{lecturaYEscrituraAcademica, cienciasDeLaSalud, psicologia, antropologia, sociologia})
     //Estudiantes
     const alex = new Estudiante()
-    
+    const andy = new Estudiante()
+    //Materias programacion
+    const elementosDeProgramacionYLogica = new Materia()
+    const matematica1 = new Materia()
+    const objetos1 = new Materia()
+    const objetos2 = new Materia()
+    const objetos3 = new Materia()
+    const basesDeDatos = new Materia()
+    const programacionConcurrente = new Materia()
+    //Materias TUESS
+    const matematicasParaEconomiaYAdministracion = new Materia()
+    const trabajoYSociedad = new Materia()
+    const economia = new Materia()
+    const desarrolloLocal = new Materia()
+    //Materias TO
+    const lecturaYEscrituraAcademica = new Materia()
+    const cienciasDeLaSalud = new Materia()
+    const psicologia = new Materia()
+    const antropologia = new Materia()
+    const sociologia = new Materia()
+
     method initialize(){
         alex.inscribirseACarrera(programacion)
         alex.inscribirseACarrera(tecnicaturaEnEconomiaSocialYSolidaria)
+
+        objetos2.agregarRequisitos(objetos1)
+        objetos2.agregarRequisitos(matematica1)
+        objetos3.agregarRequisitos(objetos2)
+        objetos3.agregarRequisitos(basesDeDatos)
+        programacionConcurrente.agregarRequisitos(objetos1)
+        programacionConcurrente.agregarRequisitos(basesDeDatos)
+        desarrolloLocal.agregarRequisitos(matematicasParaEconomiaYAdministracion)
+
+        andy.inscribirseACarrera(programacion)
+        andy.inscribirseAMateria(matematica1)
+        andy.inscribirseAMateria(objetos1)
+        andy.finalizarCursadaDeMateria(matematica1, 10)
+        andy.finalizarCursadaDeMateria(objetos1, 10)
+
+        alex.finalizarCursadaDeMateria(matematica1, 2)
+        alex.finalizarCursadaDeMateria(objetos1, 10)
+        alex.finalizarCursadaDeMateria(economia, 6)
+        alex.finalizarCursadaDeMateria(trabajoYSociedad, 8)
+        alex.finalizarCursadaDeMateria(matematica1, 8)
+        alex.finalizarCursadaDeMateria(basesDeDatos, 2)
+
     }
 
     test "Parte 1" {
         assert.that(alex.estaInscriptoEn(programacion))
         assert.that(alex.estaInscriptoEn(tecnicaturaEnEconomiaSocialYSolidaria))
         assert.notThat(alex.estaInscriptoEn(terapiaOcupacional))
-        assert.that(alex.laMateriaPerteneceAAlgunaCarrera("Bases de datos"))
-        assert.notThat(alex.laMateriaPerteneceAAlgunaCarrera("Psicologia"))
+        assert.that(alex.laMateriaPerteneceAAlgunaCarrera(basesDeDatos))
+        assert.notThat(alex.laMateriaPerteneceAAlgunaCarrera(psicologia))
 
         assert.throwsException({alex.inscribirseACarrera(programacion)})
     }
 
     test "Parte 2: Historia academica" {
-        alex.finalizarCursadaDeMateria("Matematica 1", 2)
-        alex.finalizarCursadaDeMateria("Objetos 1", 10)
-        alex.finalizarCursadaDeMateria("Economia", 6)
-        alex.finalizarCursadaDeMateria("Trabajo y sociedad", 8)
-        alex.finalizarCursadaDeMateria("Matematica 1", 8)
-        alex.finalizarCursadaDeMateria("Bases de datos", 2)
 
-        assert.throwsException({alex.finalizarCursadaDeMateria("Matematica 1", 7)})
-        assert.throwsException({alex.finalizarCursadaDeMateria("Bases de datos", 12)})
+        assert.throwsException({alex.finalizarCursadaDeMateria(matematica1, 7)})
+        assert.throwsException({alex.finalizarCursadaDeMateria(basesDeDatos, 12)})
 
-        assert.that(alex.laMateriaEstaAprobada("Matematica 1"))
-        assert.notThat(alex.laMateriaEstaAprobada("Bases de datos"))
+        assert.that(alex.laMateriaEstaAprobada(matematica1))
+        assert.notThat(alex.laMateriaEstaAprobada(basesDeDatos))
 
         assert.equals(9, alex.promedioDeMateriasAprobadasEn(programacion))
         assert.equals(2, alex.cantMateriasAprobadasDe(programacion))
@@ -47,13 +83,31 @@ describe "Inscripcion a materias" {
         assert.throwsException({alex.promedioDeMateriasAprobadasEn(terapiaOcupacional)})
         assert.equals(8, alex.promedioDeMateriasAprobadas())
         
-        const registroMate1 = alex.registroDeCursadaDeLa("Matematica 1")
+        const registroMate1 = alex.registroDeCursadaDeLa(matematica1)
 
-        assert.equals("Matematica 1", registroMate1.get(0).materia())
+        assert.equals(matematica1, registroMate1.get(0).materia())
         assert.equals(2, registroMate1.get(0).nota())
-        assert.equals("Matematica 1", registroMate1.get(1).materia())
+        assert.equals(matematica1, registroMate1.get(1).materia())
         assert.equals(8, registroMate1.get(1).nota())
+    }
 
+    test "Parte 3: correlativas" {
+        assert.that(alex.puedeCursarLaMateria(objetos2))
+        assert.that(alex.estaInscriptoEn(programacion))
+        assert.equals(#{elementosDeProgramacionYLogica, objetos2, basesDeDatos}, alex.materiasHabilitadasDe(programacion))
+        assert.equals(#{matematicasParaEconomiaYAdministracion}, alex.materiasHabilitadasDe(tecnicaturaEnEconomiaSocialYSolidaria))
+        assert.notThat(alex.puedeCursarLaMateria(psicologia))
+        assert.throwsException({alex.inscribirseAMateria(psicologia)})
+        assert.throwsException({alex.inscribirseAMateria(economia)})
+        assert.throwsExceptionWithMessage("No te puedes anotar a esta materia porque faltan cursar las correlativas", {alex.inscribirseAMateria(desarrolloLocal)})
+        assert.throwsException({alex.inscribirseAMateria(desarrolloLocal)})
 
+        alex.inscribirseAMateria(objetos2)
+
+        assert.throwsException({alex.inscribirseAMateria(objetos2)})
+
+        andy.inscribirseAMateria(objetos2)
+
+        assert.equals(#{alex, andy}, objetos2.estudiantes())
     }
 }

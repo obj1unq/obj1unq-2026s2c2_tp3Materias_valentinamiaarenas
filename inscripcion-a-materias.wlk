@@ -3,11 +3,11 @@ class Estudiante {
   const materiasCursadas = []
 
   method inscribirseACarrera(carrera) {
-    self.validarInscripcion(carrera)
+    self.validarInscripcionCarrera(carrera)
     carreras.add(carrera)
   }
 
-  method validarInscripcion(carrera) {
+  method validarInscripcionCarrera(carrera) {
     if (carreras.contains(carrera)) {
       self.error("El estudiante ya esta inscripto a esta carrera")
     }
@@ -24,22 +24,22 @@ class Estudiante {
   }
 
   method finalizarCursadaDeMateria(materia, nota) {
-    self.validarMateria(materia)
+    self.validarMateriaEnCarreras(materia)
+    self.validarMateriaAprobada(materia)
     self.validarNota(nota)
-    self.validarAprobada(materia)
     
     const materiaCursada = new HistoriaAcademica(materia = materia, nota = nota)
     materiasCursadas.add(materiaCursada)
     
   }
 
-  method validarAprobada(materia) {
+  method validarMateriaAprobada(materia) {
     if (self.laMateriaEstaAprobada(materia)) {
       self.error("La materia ya se encuentra aprobada")
     }
   }
 
-  method validarMateria(materia){
+  method validarMateriaEnCarreras(materia){
     if (not self.laMateriaPerteneceAAlgunaCarrera(materia)) {
       self.error("Esta materia no es valida para cursar")
     }
@@ -96,6 +96,43 @@ class Estudiante {
   method registroDeCursadaDeLa(materia) {
     return materiasCursadas.filter({materiaCursada => materiaCursada.materia() == materia})
   }
+
+  method inscribirseAMateria(materia) {
+    self.validarMateriaEnCarreras(materia)
+    self.validarMateriaAprobada(materia)
+    self.validarInscripcionMateria(materia)
+    self.validarRequisitosDe(materia)
+
+    materia.anotarA(self)
+  }
+
+  method validarInscripcionMateria(materia) {
+    if (self.estaCursandoLaMateria(materia)) {
+      self.error("Ya te encuentras cursando esta materia")
+    }
+  }
+
+  method estaCursandoLaMateria(materia) {
+    return materia.estudiantes().contains(self)
+  }
+
+  method validarRequisitosDe(materia) {
+    if(not self.cumpleCorrelativas(materia)) {
+      self.error("No te puedes anotar a esta materia porque faltan cursar las correlativas")
+    }
+  }
+
+  method cumpleCorrelativas(materia){
+    return materia.requisitos().all({materiaReq => self.laMateriaEstaAprobada(materiaReq)})
+  }
+
+  method puedeCursarLaMateria(materia) {
+    return self.laMateriaPerteneceAAlgunaCarrera(materia) && not self.laMateriaEstaAprobada(materia) && not self.estaCursandoLaMateria(materia) && self.cumpleCorrelativas(materia)
+  }
+
+  method materiasHabilitadasDe(carrera) {
+    return carrera.materiasHabilitadas(self)
+  }
 }
 
 class Carrera {
@@ -104,9 +141,30 @@ class Carrera {
   method lePerteneceLaMateria(nombreMateria) {
     return materias.contains(nombreMateria)
   }
+
+  method materiasHabilitadas(estudiante) {
+    return materias.filter({materiaActual => estudiante.puedeCursarLaMateria(materiaActual)})
+  }
 }
 
 class HistoriaAcademica {
   var property nota
   var property materia
+}
+
+class Materia {
+  var requisitos = #{}
+  const estudiantes = #{}
+
+  method agregarRequisitos(_value) {
+    requisitos.add(_value)
+  }
+
+  method requisitos() = requisitos
+
+  method anotarA(estudiante) {
+    estudiantes.add(estudiante)
+  }
+
+  method estudiantes() = estudiantes 
 }
