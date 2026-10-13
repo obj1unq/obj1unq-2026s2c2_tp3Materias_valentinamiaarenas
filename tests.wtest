@@ -1,0 +1,147 @@
+import inscripcion-a-materias.*
+
+describe "Inscripcion a materias" {
+    //Carreras
+    const programacion = new Carrera()
+    const tecnicaturaEnEconomiaSocialYSolidaria = new Carrera()
+    const terapiaOcupacional = new Carrera()
+    //Estudiantes
+    const alex = new Estudiante()
+    const andy = new Estudiante()
+    //Materias programacion
+    const elementosDeProgramacionYLogica = new Materia(requisitos = sinRequisitos, creditos = 6, año = 1, carreraALaQuePertenece = programacion)
+    const matematica1 = new Materia(requisitos = sinRequisitos, creditos = 8, año = 1, carreraALaQuePertenece = programacion)
+    const objetos1 = new Materia(requisitos = sinRequisitos, creditos = 8, año = 1, carreraALaQuePertenece = programacion)
+    const objetos2 = new Materia(requisitos = new RequiereCorrelativas(materiasCorrelativas = #{objetos1, matematica1}), creditos = 6, año = 1, carreraALaQuePertenece = programacion)
+    const objetos3 = new Materia(requisitos = new RequiereCorrelativas(materiasCorrelativas = #{objetos2, basesDeDatos}), creditos = 6, año = 1, carreraALaQuePertenece = programacion)
+    const basesDeDatos = new Materia(requisitos = sinRequisitos, creditos = 8, año = 1, carreraALaQuePertenece = programacion)
+    const programacionConcurrente = new Materia(requisitos = new RequiereCorrelativas(materiasCorrelativas = #{objetos1, basesDeDatos}), creditos = 6, año = 1, carreraALaQuePertenece = programacion)
+    //Materias TUESS
+    const matematicasParaEconomiaYAdministracion = new Materia(requisitos = sinRequisitos, creditos = 6, año = 1, carreraALaQuePertenece = tecnicaturaEnEconomiaSocialYSolidaria)
+    const trabajoYSociedad = new Materia(requisitos = sinRequisitos, creditos = 6, año = 1, carreraALaQuePertenece = tecnicaturaEnEconomiaSocialYSolidaria)
+    const economia = new Materia(requisitos = sinRequisitos, creditos = 6, año = 1, carreraALaQuePertenece = tecnicaturaEnEconomiaSocialYSolidaria)
+    const desarrolloLocal = new Materia(requisitos = new RequiereCorrelativas(materiasCorrelativas = #{matematicasParaEconomiaYAdministracion}), creditos = 6, año = 1, carreraALaQuePertenece = tecnicaturaEnEconomiaSocialYSolidaria)
+    //Materias TO
+    const lecturaYEscrituraAcademica = new Materia(requisitos = sinRequisitos, creditos = 8, año= 1, carreraALaQuePertenece = terapiaOcupacional)
+    const cienciasDeLaSalud = new Materia(requisitos = sinRequisitos, creditos = 8, año = 1, carreraALaQuePertenece = terapiaOcupacional)
+    const psicologia = new Materia(requisitos = requiereMateriasDelAñoAnterior, creditos = 4, año = 2, carreraALaQuePertenece = terapiaOcupacional)
+    const antropologia = new Materia(requisitos = new RequiereCreditos(creditosMinimos = 8), creditos = 4, año = 2,carreraALaQuePertenece = terapiaOcupacional)
+    const sociologia = new Materia(requisitos = new RequiereCreditos(creditosMinimos = 10), creditos = 8, año = 3, carreraALaQuePertenece = terapiaOcupacional)
+
+    method initialize(){
+        programacion.materias().addAll(#{elementosDeProgramacionYLogica, matematica1, objetos1, objetos2, objetos3, basesDeDatos, programacionConcurrente})
+        tecnicaturaEnEconomiaSocialYSolidaria.materias().addAll(#{matematicasParaEconomiaYAdministracion, trabajoYSociedad, economia, desarrolloLocal})
+        terapiaOcupacional.materias().addAll(#{lecturaYEscrituraAcademica, cienciasDeLaSalud, psicologia, antropologia, sociologia})
+
+        alex.inscribirseACarrera(programacion)
+        alex.inscribirseACarrera(tecnicaturaEnEconomiaSocialYSolidaria)
+
+        andy.inscribirseACarrera(programacion)
+        andy.inscribirseAMateria(matematica1)
+        andy.inscribirseAMateria(objetos1)
+        andy.finalizarCursadaDeMateria(matematica1, 10)
+        andy.finalizarCursadaDeMateria(objetos1, 10)
+
+        alex.inscribirseAMateria(matematica1)
+        alex.finalizarCursadaDeMateria(matematica1, 2)
+        alex.inscribirseAMateria(objetos1)
+        alex.finalizarCursadaDeMateria(objetos1, 10)
+        alex.inscribirseAMateria(economia)
+        alex.finalizarCursadaDeMateria(economia, 6)
+        alex.inscribirseAMateria(trabajoYSociedad)
+        alex.finalizarCursadaDeMateria(trabajoYSociedad, 8)
+        alex.inscribirseAMateria(matematica1)
+        alex.finalizarCursadaDeMateria(matematica1, 8)
+        alex.inscribirseAMateria(basesDeDatos)
+        alex.finalizarCursadaDeMateria(basesDeDatos, 2)
+
+        andy.inscribirseACarrera(terapiaOcupacional)
+    }
+
+    test "Parte 1" {
+        assert.that(alex.estaInscriptoEn(programacion))
+        assert.that(alex.estaInscriptoEn(tecnicaturaEnEconomiaSocialYSolidaria))
+        assert.notThat(alex.estaInscriptoEn(terapiaOcupacional))
+        assert.that(alex.laMateriaPerteneceAAlgunaCarrera(basesDeDatos))
+        assert.notThat(alex.laMateriaPerteneceAAlgunaCarrera(psicologia))
+
+        assert.throwsException({alex.inscribirseACarrera(programacion)})
+    }
+
+    test "Parte 2: Historia academica" {
+
+        assert.throwsException({alex.finalizarCursadaDeMateria(matematica1, 7)})
+        assert.throwsException({alex.finalizarCursadaDeMateria(basesDeDatos, 12)})
+
+        assert.that(alex.laMateriaEstaAprobada(matematica1))
+        assert.notThat(alex.laMateriaEstaAprobada(basesDeDatos))
+
+        assert.equals(9, alex.promedioDeMateriasAprobadasEn(programacion))
+        assert.equals(2, alex.cantMateriasAprobadasDe(programacion))
+        assert.equals(7, alex.promedioDeMateriasAprobadasEn(tecnicaturaEnEconomiaSocialYSolidaria))
+        assert.throwsException({alex.promedioDeMateriasAprobadasEn(terapiaOcupacional)})
+        
+        alex.inscribirseACarrera(terapiaOcupacional)
+
+        assert.throwsException({alex.promedioDeMateriasAprobadasEn(terapiaOcupacional)})
+        assert.equals(8, alex.promedioDeMateriasAprobadas())
+        
+        const registroMate1 = alex.registroDeCursadaDeLa(matematica1)
+
+        assert.equals(matematica1, registroMate1.get(0).materia())
+        assert.equals(2, registroMate1.get(0).nota())
+        assert.equals(matematica1, registroMate1.get(1).materia())
+        assert.equals(8, registroMate1.get(1).nota())
+    }
+
+    test "Parte 3: correlativas" {
+        assert.that(alex.puedeCursarLaMateriaDeCarrera(objetos2, programacion))
+        assert.that(alex.estaInscriptoEn(programacion))
+        assert.equals(#{elementosDeProgramacionYLogica, objetos2, basesDeDatos}, alex.materiasHabilitadasDe(programacion))
+        assert.equals(#{matematicasParaEconomiaYAdministracion}, alex.materiasHabilitadasDe(tecnicaturaEnEconomiaSocialYSolidaria))
+        assert.notThat(alex.puedeCursarLaMateriaDeCarrera(psicologia, terapiaOcupacional))
+        assert.throwsException({alex.inscribirseAMateria(psicologia)})
+        assert.throwsException({alex.inscribirseAMateria(economia)})
+        assert.throwsExceptionWithMessage("No te puedes anotar a esta materia porque faltan cursar las correlativas", {alex.inscribirseAMateria(desarrolloLocal)})
+        assert.throwsException({alex.inscribirseAMateria(desarrolloLocal)})
+
+        alex.inscribirseAMateria(objetos2)
+
+        assert.throwsException({alex.inscribirseAMateria(objetos2)})
+
+        andy.inscribirseAMateria(objetos2)
+
+        assert.equals(#{alex, andy}, objetos2.estudiantes())
+    }
+
+    test "Parte 4: creditos y años" {
+        assert.equals(#{lecturaYEscrituraAcademica, cienciasDeLaSalud}, andy.materiasHabilitadasDe(terapiaOcupacional))
+
+        andy.inscribirseAMateria(lecturaYEscrituraAcademica)
+        andy.finalizarCursadaDeMateria(lecturaYEscrituraAcademica, 10)
+
+        assert.equals(8, andy.creditosAcumuladosEn(terapiaOcupacional))
+        assert.notThat(terapiaOcupacional.aproboElAño(andy, 1))
+        assert.equals(#{cienciasDeLaSalud, antropologia}, andy.materiasHabilitadasDe(terapiaOcupacional))
+
+        andy.inscribirseAMateria(antropologia)
+        andy.finalizarCursadaDeMateria(antropologia, 10)
+
+        assert.equals(12, andy.creditosAcumuladosEn(terapiaOcupacional))
+        assert.equals(#{cienciasDeLaSalud, sociologia}, andy.materiasHabilitadasDe(terapiaOcupacional))
+        
+        andy.inscribirseAMateria(cienciasDeLaSalud)
+        andy.finalizarCursadaDeMateria(cienciasDeLaSalud, 10)
+
+        assert.equals(20, andy.creditosAcumuladosEn(terapiaOcupacional))
+        assert.that(terapiaOcupacional.aproboElAño(andy, 1))
+        assert.equals(#{psicologia, sociologia}, andy.materiasHabilitadasDe(terapiaOcupacional))
+        
+        andy.inscribirseAMateria(psicologia)
+        andy.inscribirseAMateria(sociologia)
+
+        assert.equals(#{andy}, psicologia.estudiantes())
+        assert.equals(#{andy}, sociologia.estudiantes())
+
+    }
+}
